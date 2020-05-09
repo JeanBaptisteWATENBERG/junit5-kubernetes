@@ -1,3 +1,5 @@
+import java.lang.System;
+
 plugins {
     java
 }
@@ -24,6 +26,7 @@ allprojects {
         testLogging {
             events("passed", "skipped", "failed")
         }
+        systemProperties = System.getProperties().map { e -> Pair(e.key as String, e.value) }.toMap()
     }
 
     configure<JavaPluginConvention> {

@@ -143,93 +143,24 @@ public class Pod implements KubernetesGenericObject<Pod> {
             V1Pod createdPod = coreV1Api.createNamespacedPod(NAMESPACE, podToCreate, null, null, null);
             this.createdPod.set(createdPod);
             if (this.waitStrategy != null) {
-                LocalDateTime startTime = LocalDateTime.now();
-                if (this.waitStrategy instanceof WaitRunningStatusStrategy) {
-                    boolean podSuccessfullyStarted = false;
-
-                    try(Watch<V1Pod> watch = Watch.createWatch(
-                            coreV1Api.getApiClient(),
-                            coreV1Api.listNamespacedPodCall(
-                                    NAMESPACE, null, null, null, null, null,
-                                    null, null, null, true,
-                                    null),
-                            new TypeToken<Watch.Response<V1Pod>>() {}.getType())) {
-
-                        for (Watch.Response<V1Pod> item : watch) {
-                            String name = item.object.getMetadata().getName();
-                            if (name.equals(createdPod.getMetadata().getName())) {
-                                V1PodStatus podStatus = item.object.getStatus();
-                                if (LocalDateTime.now().isBefore(startTime.plus(waitStrategy.getTimeout()))) {
-                                    if (podStatus == null) {
-                                        continue;
-                                    }
-
-                                    if (podStatus.getPhase().equalsIgnoreCase("Running")) {
-                                        podSuccessfullyStarted = true;
-                                        break;
-                                    }
-                                } else {
-                                    break;
-                                }
-                            }
-                        }
+                try(Watch<V1Pod> watch = Watch.createWatch(
+                        coreV1Api.getApiClient(),
+                        coreV1Api.listNamespacedPodCall(
+                                NAMESPACE, null, null, null, null, null,
+                                null, null, null, true,
+                                null),
+                        new TypeToken<Watch.Response<V1Pod>>() {}.getType())) {
+                this.waitStrategy.apply(watch, createdPod);
+                } catch (IOException | ApiException e) {
+                    if (e instanceof ApiException) {
+                        logAnThrowApiException((ApiException) e);
                     }
-
-                    if (!podSuccessfullyStarted) {
-                        throw new RuntimeException("Failed to run pod " + this + " before timeout " + waitStrategy.getTimeout());
-                    }
+                    throw new RuntimeException(e);
                 }
-                else if (this.waitStrategy instanceof WaitLogStrategy) {
-                    PodLogs logs = new PodLogs();
 
-                    //Wait pod to start
-                    try(Watch<V1Pod> watch = Watch.createWatch(
-                            coreV1Api.getApiClient(),
-                            coreV1Api.listNamespacedPodCall(
-                                    NAMESPACE, null, null, null, null, null,
-                                    null, null, null, true,
-                                    null),
-                            new TypeToken<Watch.Response<V1Pod>>() {}.getType())) {
-
-                        for (Watch.Response<V1Pod> item : watch) {
-                            String name = item.object.getMetadata().getName();
-                            if (name.equals(createdPod.getMetadata().getName())) {
-                                V1PodStatus podStatus = item.object.getStatus();
-                                if (LocalDateTime.now().isAfter(startTime.plus(waitStrategy.getTimeout()))) {
-                                    throw new RuntimeException("Failed to start pod " + createdPod + " before timeout " + waitStrategy.getTimeout());
-                                }
-                                if (podStatus == null || podStatus.getPhase().equalsIgnoreCase("Pending") || podStatus.getPhase().equalsIgnoreCase("Unknown")) {
-                                    continue;
-                                }
-                                break;
-                            }
-                        }
-                    }
-                    //Read pods logs
-                    try (InputStream is = logs.streamNamespacedPodLog(createdPod)) {
-                        Scanner sc = new Scanner(is);
-                        int conditionMetTimes = 0;
-                        String textOrRegex = ((WaitLogStrategy) this.waitStrategy).getText();
-                        int howManyTimesShouldConditionMet = ((WaitLogStrategy) this.waitStrategy).getTimes();
-                        while (sc.hasNextLine() && LocalDateTime.now().isBefore(startTime.plus(waitStrategy.getTimeout()))) {
-                            String input = sc.nextLine();
-                            //Check if log line matches the expected text or regex
-                            if (input.matches(textOrRegex) || input.contains(textOrRegex)) {
-                                conditionMetTimes++;
-                                if (conditionMetTimes == howManyTimesShouldConditionMet) {
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (conditionMetTimes == 0 || conditionMetTimes != howManyTimesShouldConditionMet) {
-                            throw new RuntimeException("Failed to find (x" + howManyTimesShouldConditionMet + ") " + textOrRegex + " in log of pod " + createdPod + " before timeout " + waitStrategy.getTimeout());
-                        }
-                    }
-                }
             }
             Runtime.getRuntime().addShutdownHook(new Thread(() -> removePod(podName, coreV1Api)));
-        } catch (IOException | ApiException e) {
+        } catch (ApiException e) {
             if (e instanceof ApiException) {
                 logAnThrowApiException((ApiException) e);
             }

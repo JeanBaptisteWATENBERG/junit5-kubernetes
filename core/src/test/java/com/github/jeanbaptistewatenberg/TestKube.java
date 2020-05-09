@@ -1,5 +1,7 @@
 package com.github.jeanbaptistewatenberg;
 
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.util.Config;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -26,6 +28,18 @@ public class TestKube {
             String body = IOUtils.toString(response.body().byteStream());
             LOGGER.info(body);
             System.out.println(body);
+        } catch (IOException e) {
+            LOGGER.severe(e.getMessage());
+        }
+    }
+
+    @Test
+    void test_api_client() {
+        try {
+            ApiClient client = Config.defaultClient();
+            String basePath = client.getBasePath();
+            System.out.println(basePath);
+            LOGGER.info(basePath);
         } catch (IOException e) {
             LOGGER.severe(e.getMessage());
         }

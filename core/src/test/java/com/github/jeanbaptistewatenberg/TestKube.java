@@ -2,8 +2,10 @@ package com.github.jeanbaptistewatenberg;
 
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.ApiResponse;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1APIResourceList;
 import io.kubernetes.client.util.Config;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -37,8 +39,10 @@ public class TestKube {
             Configuration.setDefaultApiClient(client);
             LOGGER.info("build core v1");
             CoreV1Api coreV1Api = new CoreV1Api(client);
+            LOGGER.info("get resources with http info");
+            ApiResponse<V1APIResourceList> apiResourcesWithHttpInfo = coreV1Api.getAPIResourcesWithHttpInfo();
+            System.out.println(apiResourcesWithHttpInfo.getStatusCode());
             LOGGER.info("get resources");
-
             System.out.println(coreV1Api.getAPIResources().getResources());
         } catch (IOException | ApiException e) {
             LOGGER.severe(e.getMessage());

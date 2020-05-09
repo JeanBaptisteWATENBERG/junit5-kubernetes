@@ -26,6 +26,8 @@ public class TestKube {
         try {
             LOGGER.info("get client");
             ApiClient client = Config.defaultClient();
+            client.setVerifyingSsl(false);
+            client.setDebugging(true);
             // infinite timeout
             LOGGER.info("get http client");
             OkHttpClient httpClient = client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();

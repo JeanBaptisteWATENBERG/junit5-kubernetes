@@ -86,7 +86,7 @@ public class WaitLogStrategy extends WaitStrategy {
                 }
             }
 
-            if (conditionMetTimes == 0 || conditionMetTimes != howManyTimesShouldConditionMet) {
+            if (conditionMetTimes != howManyTimesShouldConditionMet) {
                 throw new RuntimeException("Failed to find (x" + howManyTimesShouldConditionMet + ") " + textOrRegex + " in log of pod " + createdPod + " before timeout " + this.getTimeout());
             }
         } catch (IOException e) {

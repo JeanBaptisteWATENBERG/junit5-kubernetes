@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class Pod implements KubernetesGenericObject<Pod> {
@@ -35,6 +36,7 @@ public class Pod implements KubernetesGenericObject<Pod> {
     private ThreadLocal<V1Pod> createdPod = new ThreadLocal<>();
     private static final String SYSTEM_NAMESPACE = System.getProperty("kubernetesNamespace");
     private static final String NAMESPACE = SYSTEM_NAMESPACE != null && !SYSTEM_NAMESPACE.trim().equals("") ? SYSTEM_NAMESPACE : "default";
+    private static final Logger LOGGER = Logger.getLogger(Pod.class.getName());
 
     public Pod(V1Pod podToCreate) {
         this.podToCreate = podToCreate;
@@ -100,11 +102,16 @@ public class Pod implements KubernetesGenericObject<Pod> {
                 }
                 return retrievedPod.getStatus().getHostIP();
             } catch (ApiException e) {
-                throw new RuntimeException(e.getResponseBody(), e);
+                return logAnThrowApiException(e);
             }
         } else {
             throw new RuntimeException("Can't get ip of a non running object.");
         }
+    }
+
+    private static String logAnThrowApiException(ApiException e) {
+        LOGGER.severe("Kubernetes API replied with " + e.getCode() + " status code and body " + e.getResponseBody());
+        throw new RuntimeException(e.getResponseBody(), e);
     }
 
     @Override
@@ -206,7 +213,7 @@ public class Pod implements KubernetesGenericObject<Pod> {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> removePod(podName, coreV1Api)));
         } catch (IOException | ApiException e) {
             if (e instanceof ApiException) {
-                throw new RuntimeException(((ApiException) e).getResponseBody(), e);
+                logAnThrowApiException((ApiException) e);
             }
             throw new RuntimeException(e);
         }
@@ -226,7 +233,7 @@ public class Pod implements KubernetesGenericObject<Pod> {
         try {
             coreV1Api.deleteNamespacedPod(podName, NAMESPACE, null, null, null, null, null, null);
         } catch (ApiException e) {
-            throw new RuntimeException(e.getResponseBody(), e);
+            logAnThrowApiException(e);
         } catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
                 IllegalStateException ise = (IllegalStateException) e.getCause();

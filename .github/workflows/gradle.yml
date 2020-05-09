@@ -28,6 +28,8 @@ jobs:
       run: |
         kubectl cluster-info
         kubectl get pods -n kube-system
+        kubectl get pods
+        curl -k https://127.0.0.1:32768/api/v1/namespaces/default
         echo "current-context:" $(kubectl config current-context)
         echo "environment-kubeconfig:" ${KUBECONFIG}
     - name: Build with Gradle

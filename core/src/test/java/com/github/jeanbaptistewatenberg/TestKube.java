@@ -30,7 +30,7 @@ public class TestKube {
             client.setDebugging(true);
             // infinite timeout
             LOGGER.info("get http client");
-            OkHttpClient httpClient = client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
+            OkHttpClient httpClient = client.getHttpClient().newBuilder().connectTimeout(0, TimeUnit.SECONDS).writeTimeout(0, TimeUnit.SECONDS).readTimeout(0, TimeUnit.SECONDS).build();
             LOGGER.info("set http client");
             client.setHttpClient(httpClient);
             LOGGER.info("setDefaultApiClient");
@@ -38,6 +38,7 @@ public class TestKube {
             LOGGER.info("build core v1");
             CoreV1Api coreV1Api = new CoreV1Api(client);
             LOGGER.info("get resources");
+
             System.out.println(coreV1Api.getAPIResources().getResources());
         } catch (IOException | ApiException e) {
             LOGGER.severe(e.getMessage());

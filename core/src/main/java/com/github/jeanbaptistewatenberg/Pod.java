@@ -111,6 +111,7 @@ public class Pod implements KubernetesGenericObject<Pod> {
 
     private static String logAnThrowApiException(ApiException e) {
         LOGGER.severe("Kubernetes API replied with " + e.getCode() + " status code and body " + e.getResponseBody());
+        System.out.println("Kubernetes API replied with " + e.getCode() + " status code and body " + e.getResponseBody());
         throw new RuntimeException(e.getResponseBody(), e);
     }
 

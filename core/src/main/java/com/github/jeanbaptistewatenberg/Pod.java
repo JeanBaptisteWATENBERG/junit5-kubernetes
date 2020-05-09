@@ -58,6 +58,7 @@ public class Pod implements KubernetesGenericObject<Pod> {
         return coreV1Api;
     }
 
+    // TODO study cleanup mechanism if JVM is interrupted before test completion
     public static void cleanup() {
         CoreV1Api coreV1Api = initiateCoreV1Api();
         try {
@@ -99,7 +100,7 @@ public class Pod implements KubernetesGenericObject<Pod> {
                 }
                 return retrievedPod.getStatus().getHostIP();
             } catch (ApiException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException(e.getResponseBody(), e);
             }
         } else {
             throw new RuntimeException("Can't get ip of a non running object.");
@@ -204,6 +205,9 @@ public class Pod implements KubernetesGenericObject<Pod> {
             }
             Runtime.getRuntime().addShutdownHook(new Thread(() -> removePod(podName, coreV1Api)));
         } catch (IOException | ApiException e) {
+            if (e instanceof ApiException) {
+                throw new RuntimeException(((ApiException) e).getResponseBody(), e);
+            }
             throw new RuntimeException(e);
         }
     }
@@ -222,7 +226,7 @@ public class Pod implements KubernetesGenericObject<Pod> {
         try {
             coreV1Api.deleteNamespacedPod(podName, NAMESPACE, null, null, null, null, null, null);
         } catch (ApiException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e.getResponseBody(), e);
         } catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
                 IllegalStateException ise = (IllegalStateException) e.getCause();

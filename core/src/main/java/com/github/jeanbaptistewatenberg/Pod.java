@@ -161,10 +161,7 @@ public class Pod implements KubernetesGenericObject<Pod> {
             }
             Runtime.getRuntime().addShutdownHook(new Thread(() -> removePod(podName, coreV1Api)));
         } catch (ApiException e) {
-            if (e instanceof ApiException) {
-                logAnThrowApiException((ApiException) e);
-            }
-            throw new RuntimeException(e);
+                logAnThrowApiException(e);
         }
     }
 

@@ -31,4 +31,4 @@ jobs:
         echo "current-context:" $(kubectl config current-context)
         echo "environment-kubeconfig:" ${KUBECONFIG}
     - name: Build with Gradle
-      run: ./gradlew build --debug
+      run: ./gradlew build --debug -DjunitKubernetesDebug=true

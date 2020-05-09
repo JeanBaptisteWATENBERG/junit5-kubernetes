@@ -35,6 +35,7 @@ public class Pod implements KubernetesGenericObject<Pod> {
     private final V1Pod podToCreate;
     private ThreadLocal<V1Pod> createdPod = new ThreadLocal<>();
     private static final String SYSTEM_NAMESPACE = System.getProperty("kubernetesNamespace");
+    private static final String DEBUG = System.getProperty("junitKubernetesDebug");
     private static final String NAMESPACE = SYSTEM_NAMESPACE != null && !SYSTEM_NAMESPACE.trim().equals("") ? SYSTEM_NAMESPACE : "default";
     private static final Logger LOGGER = Logger.getLogger(Pod.class.getName());
 
@@ -47,6 +48,10 @@ public class Pod implements KubernetesGenericObject<Pod> {
         CoreV1Api coreV1Api;
         try {
             ApiClient client = Config.defaultClient();
+            System.out.println(DEBUG);
+            if (DEBUG != null && DEBUG.equalsIgnoreCase("true")) {
+                client.setDebugging(true);
+            }
             // infinite timeout
             OkHttpClient httpClient = client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
             client.setHttpClient(httpClient);

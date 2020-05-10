@@ -9,11 +9,14 @@ import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.*;
 import java.io.IOException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,10 +30,12 @@ public class TestKube {
 
     @Test
     void should_test_differently_api() throws IOException, ApiException {
+        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor();
+        httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         ApiClient client = Config.defaultClient();
         client.setVerifyingSsl(false);
         client.setDebugging(true);
-        OkHttpClient httpClient = client.getHttpClient().newBuilder().connectTimeout(0, TimeUnit.SECONDS).writeTimeout(0, TimeUnit.SECONDS).readTimeout(0, TimeUnit.SECONDS).build();
+        OkHttpClient httpClient = client.getHttpClient().newBuilder().addInterceptor(httpLoggingInterceptor).connectTimeout(0, TimeUnit.SECONDS).writeTimeout(0, TimeUnit.SECONDS).readTimeout(0, TimeUnit.SECONDS).build();
         client.setHttpClient(httpClient);
         LOGGER.info("build call");
         Call call = listPod(client);

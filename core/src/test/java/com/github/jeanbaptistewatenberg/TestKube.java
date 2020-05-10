@@ -28,6 +28,22 @@ public class TestKube {
     OkHttpClient okHttpClient = new OkHttpClient();
     private static final Logger LOGGER = Logger.getLogger(TestKube.class.getName());
 
+
+    @Test
+    void should_call_directly() throws IOException {
+        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor();
+        httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        LOGGER.info("should_call_directly");
+        ApiClient client = Config.defaultClient();
+        client.setVerifyingSsl(false);
+        client.setDebugging(true);
+        OkHttpClient httpClient = client.getHttpClient().newBuilder().addInterceptor(httpLoggingInterceptor).connectTimeout(0, TimeUnit.SECONDS).writeTimeout(0, TimeUnit.SECONDS).readTimeout(0, TimeUnit.SECONDS).build();
+        LOGGER.info("should_call_directly api client built " + client.getBasePath() + "/api/v1/namespaces");
+        Request request = new Request.Builder()
+                .url(client.getBasePath() + "/api/v1/namespaces")
+                .build();
+    }
+
     @Test
     void should_test_differently_api() throws IOException, ApiException {
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor();

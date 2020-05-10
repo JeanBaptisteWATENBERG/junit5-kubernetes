@@ -22,6 +22,9 @@ allprojects {
     tasks.test {
         useJUnitPlatform()
         testLogging {
+            info {
+                showStandardStreams = true
+            }
             events("passed", "skipped", "failed")
         }
     }

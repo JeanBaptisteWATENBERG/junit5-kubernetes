@@ -24,6 +24,19 @@ allprojects {
     tasks.test {
         useJUnitPlatform()
         testLogging {
+
+            // set to false to disable detailed failure logs
+            showExceptions = true
+
+            // set to false to hide stack traces
+            showStackTraces = true
+
+            // set to false to hide exception causes
+            showCauses = true
+
+            // enable to see standard out and error streams inline with the test results
+            showStandardStreams = true
+
             events("passed", "skipped", "failed")
         }
         systemProperties = System.getProperties().map { e -> Pair(e.key as String, e.value) }.toMap()

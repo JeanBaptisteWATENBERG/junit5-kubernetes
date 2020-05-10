@@ -33,4 +33,4 @@ jobs:
         echo "current-context:" $(kubectl config current-context)
         echo "environment-kubeconfig:" ${KUBECONFIG}
     - name: Build with Gradle
-      run: ./gradlew build -DjunitKubernetesDebug=true -DjunitKubernetesDisableHttp2=true
+      run: ./gradlew build -DjunitKubernetesDisableHttp2=true

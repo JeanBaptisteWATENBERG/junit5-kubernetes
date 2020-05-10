@@ -21,8 +21,10 @@ jobs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
 
+    - name: Kind Cluster
+      uses: helm/kind-action@v1.0.0-rc.1
     - name: Build with Gradle
-      run: gradle build
+      run: gradle build -DjunitKubernetesDisableHttp2=true
 
     # The USERNAME and TOKEN need to correspond to the credentials environment variables used in
     # the publishing section of your build.gradle

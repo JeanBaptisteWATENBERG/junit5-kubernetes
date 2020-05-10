@@ -2,9 +2,10 @@ import java.lang.System;
 
 plugins {
     java
+    `maven-publish`
 }
 
-allprojects {
+subprojects {
     group = "com.github.jeanbaptistewatenberg"
     version = "1.0-SNAPSHOT"
 
@@ -14,11 +15,31 @@ allprojects {
 
     apply {
         plugin("java")
+        plugin("maven-publish")
     }
 
     dependencies {
         testImplementation("org.assertj:assertj-core:3.11.1")
         testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
+    }
+
+    publishing {
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/OWNER/REPOSITORY")
+                credentials {
+                    username = project.findProperty("gpr.user") as String? ?: System.getenv("USERNAME")
+                    password = project.findProperty("gpr.key") as String? ?: System.getenv("TOKEN")
+                }
+            }
+        }
+
+        publications {
+            create<MavenPublication>("default") {
+                from(components["java"])
+            }
+        }
     }
 
     tasks.test {

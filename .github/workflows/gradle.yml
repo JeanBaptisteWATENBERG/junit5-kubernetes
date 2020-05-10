@@ -24,13 +24,5 @@ jobs:
       uses: helm/kind-action@v1.0.0-rc.1
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: debug
-      run: |
-        kubectl cluster-info
-        kubectl get pods -n kube-system
-        kubectl get pods
-        curl -k https://127.0.0.1:32768/api/v1/namespaces/default -v
-        echo "current-context:" $(kubectl config current-context)
-        echo "environment-kubeconfig:" ${KUBECONFIG}
     - name: Build with Gradle
       run: ./gradlew build -DjunitKubernetesDisableHttp2=true

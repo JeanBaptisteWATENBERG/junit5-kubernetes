@@ -22,9 +22,19 @@ allprojects {
     tasks.test {
         useJUnitPlatform()
         testLogging {
-            info {
-                showStandardStreams = true
-            }
+
+            // set to false to disable detailed failure logs
+            showExceptions = true
+
+            // set to false to hide stack traces
+            showStackTraces = true
+
+            // set to false to hide exception causes
+            showCauses = true
+
+            // enable to see standard out and error streams inline with the test results
+            showStandardStreams = true
+
             events("passed", "skipped", "failed")
         }
     }

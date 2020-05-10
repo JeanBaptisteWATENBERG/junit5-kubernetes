@@ -1,4 +1,4 @@
-# Junit5-kubernetes
+# Junit5-kubernetes ![Java CI with Gradle](https://github.com/JeanBaptisteWATENBERG/junit5-kubernetes/workflows/Java%20CI%20with%20Gradle/badge.svg)
 
 Inspired by https://www.testcontainers.org/, this project aims at using a kubernetes pod directly form your junit5 test classes.
 It hence fills the lack of kubernetes support of testcontainers while the library study it's implementation (https://github.com/testcontainers/testcontainers-java/issues/1135).
@@ -74,3 +74,11 @@ Available `WaitStrategies` are :
 
  - `WaitRunningStatusStrategy` : Will wait until the Pod swith to "Running" phase (https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)
  - `WaitLogStrategy` : Will wait for a particular event in the logs (eg. [TestWaitForLog.java](./core/src/test/java/com/github/jeanbaptistewatenberg/TestWaitForLog.java))
+ 
+ ### Configuration options
+ 
+ You can configure the extension using JVM system properties. Available properties are :
+ 
+  - kubernetesNamespace : namespace in which you want the extension to deploy the objects
+  - junitKubernetesDebug : print advanced logs about what the extension does, however it will make waiters fails as kubernetes java client `watch` is not compatible with this option
+  - junitKubernetesDisableHttp2 : it will set kubernetes client to use only http 1 instead of 2

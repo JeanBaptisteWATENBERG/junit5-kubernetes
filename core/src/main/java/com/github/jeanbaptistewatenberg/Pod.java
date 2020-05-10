@@ -17,10 +17,12 @@ import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
@@ -36,6 +38,7 @@ public class Pod implements KubernetesGenericObject<Pod> {
     private ThreadLocal<V1Pod> createdPod = new ThreadLocal<>();
     private static final String SYSTEM_NAMESPACE = System.getProperty("kubernetesNamespace");
     private static final String DEBUG = System.getProperty("junitKubernetesDebug");
+    private static final String DISABLE_HTTP2 = System.getProperty("junitKubernetesDisableHttp2");
     private static final String NAMESPACE = SYSTEM_NAMESPACE != null && !SYSTEM_NAMESPACE.trim().equals("") ? SYSTEM_NAMESPACE : "default";
     private static final Logger LOGGER = Logger.getLogger(Pod.class.getName());
 
@@ -48,12 +51,18 @@ public class Pod implements KubernetesGenericObject<Pod> {
         CoreV1Api coreV1Api;
         try {
             ApiClient client = Config.defaultClient();
-            System.out.println(DEBUG);
             if (DEBUG != null && DEBUG.equalsIgnoreCase("true")) {
                 client.setDebugging(true);
             }
             // infinite timeout
-            OkHttpClient httpClient = client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
+            OkHttpClient.Builder builder = client.getHttpClient().newBuilder()
+                    .readTimeout(0, TimeUnit.SECONDS);
+
+            if (DISABLE_HTTP2 != null && DISABLE_HTTP2.equalsIgnoreCase("true")) {
+                builder.protocols(Collections.singletonList(Protocol.HTTP_1_1));
+            }
+
+            OkHttpClient httpClient = builder.build();
             client.setHttpClient(httpClient);
             Configuration.setDefaultApiClient(client);
 

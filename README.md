@@ -5,11 +5,19 @@ It hence fills the lack of kubernetes support of testcontainers while the librar
 
 ## Maven installation
 
-Coming soon
+```xml
+<dependency>
+  <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
+  <artifactId>core</artifactId>
+  <version>1.0-SNAPSHOT</version>
+</dependency>
+```
 
 ## Gradle installation
 
-Coming soon
+```
+implementation("com.github.jeanbaptistewatenberg.junit5kubernetes:core:1.0-SNAPSHOT")
+```
 
 ## Usage
 

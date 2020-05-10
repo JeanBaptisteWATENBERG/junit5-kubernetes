@@ -42,6 +42,9 @@ public class TestKube {
         Request request = new Request.Builder()
                 .url(client.getBasePath() + "/api/v1/namespaces")
                 .build();
+        Response response = httpClient.newCall(request).execute();
+        LOGGER.info("should_call_directly reply with " + response.code());
+        LOGGER.info("should_call_directly reply with " + response.body().string());
     }
 
     @Test

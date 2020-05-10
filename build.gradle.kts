@@ -6,7 +6,7 @@ plugins {
 }
 
 subprojects {
-    group = "com.github.jeanbaptistewatenberg"
+    group = "com.github.jeanbaptistewatenberg.junit5kubernetes"
     version = "1.0-SNAPSHOT"
 
     repositories {

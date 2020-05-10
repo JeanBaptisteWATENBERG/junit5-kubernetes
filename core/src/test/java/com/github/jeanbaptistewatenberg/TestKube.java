@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.*;
 import java.io.IOException;
+import java.net.URL;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -39,12 +40,10 @@ public class TestKube {
         client.setDebugging(true);
         OkHttpClient httpClient = client.getHttpClient().newBuilder().addInterceptor(httpLoggingInterceptor).connectTimeout(0, TimeUnit.SECONDS).writeTimeout(0, TimeUnit.SECONDS).readTimeout(0, TimeUnit.SECONDS).build();
         LOGGER.info("should_call_directly api client  built " + client.getBasePath() + "/api/v1/namespaces");
-        Request request = new Request.Builder()
-                .url(client.getBasePath() + "/api/v1/namespaces")
-                .build();
-        Response response = httpClient.newCall(request).execute();
-        LOGGER.info("should_call_directly reply with " + response.code());
-        LOGGER.info("should_call_directly reply with " + response.body().string());
+        HttpsURLConnection.setDefaultSSLSocketFactory(new NoSSLv3Factory());
+        int code = TestUtils.responseStatus(new URL(client.getBasePath() + "/api/v1/namespaces"));
+
+        LOGGER.info("should_call_directly reply with " + code);
     }
 
     @Test

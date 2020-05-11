@@ -3,6 +3,7 @@ import java.lang.System;
 plugins {
     java
     `maven-publish`
+    `signing`
 }
 
 subprojects {
@@ -16,6 +17,19 @@ subprojects {
     apply {
         plugin("java")
         plugin("maven-publish")
+        plugin("signing")
+    }
+
+    java {
+        withJavadocJar()
+        withSourcesJar()
+    }
+
+    signing {
+        val signingKey: String? by project
+        val signingPassword: String? by project
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign(publishing.publications["default"])
     }
 
     dependencies {
@@ -33,12 +47,46 @@ subprojects {
                     password = project.findProperty("gpr.key") as String? ?: System.getenv("TOKEN")
                 }
             }
+            maven {
+                name = "maven-central"
+                val releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+                val snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+                url = uri(if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
+                credentials {
+                    username = System.getenv("ORG_GRADLE_PROJECT_SONATYPE_NEXUS_USERNAME")
+                    password = System.getenv("ORG_GRADLE_PROJECT_SONATYPE_NEXUS_PASSWORD")
+                }
+            }
         }
 
         publications {
             create<MavenPublication>("default") {
                 from(components["java"])
+                pom {
+                    name.set("junit5-kubernetes")
+                    description.set("Use pod and other kubernetes object right form your junit5 tests.")
+                    url.set("https://github.com/JeanBaptisteWATENBERG/junit5-kubernetes")
+                    licenses {
+                        license {
+                            name.set("The Apache License, Version 2.0")
+                            url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                        }
+                    }
+                    developers {
+                        developer {
+                            id.set("JeanBaptisteWATENBERG")
+                            name.set("Jean-Baptiste WATENBERG")
+                            email.set("jeanbaptiste.watenberg@gmail.com")
+                        }
+                    }
+                    scm {
+                        connection.set("scm:git:git://github.com/JeanBaptisteWATENBERG/junit5-kubernetes.git")
+                        developerConnection.set("scm:git:ssh://github.com/JeanBaptisteWATENBERG/junit5-kubernetes.git")
+                        url.set("https://github.com/JeanBaptisteWATENBERG/junit5-kubernetes")
+                    }
+                }
             }
+
         }
     }
 

@@ -9,14 +9,14 @@ It hence fills the lack of kubernetes support of testcontainers while the librar
 <dependency>
   <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
   <artifactId>core</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 
 ## Gradle installation
 
 ```
-implementation("com.github.jeanbaptistewatenberg.junit5kubernetes:core:1.0-SNAPSHOT")
+implementation("com.github.jeanbaptistewatenberg.junit5kubernetes:core:1.0.0")
 ```
 
 ## Usage

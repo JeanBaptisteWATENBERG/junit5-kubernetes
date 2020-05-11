@@ -25,13 +25,6 @@ subprojects {
         withSourcesJar()
     }
 
-    signing {
-        val signingKey: String? by project
-        val signingPassword: String? by project
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign(publishing.publications["default"])
-    }
-
     dependencies {
         testImplementation("org.assertj:assertj-core:3.11.1")
         testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
@@ -88,6 +81,13 @@ subprojects {
             }
 
         }
+    }
+
+    signing {
+        val signingKey: String? by project
+        val signingPassword: String? by project
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign(publishing.publications["default"])
     }
 
     tasks.test {

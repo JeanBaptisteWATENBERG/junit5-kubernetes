@@ -80,5 +80,6 @@ Available `WaitStrategies` are :
  You can configure the extension using JVM system properties. Available properties are :
  
   - kubernetesNamespace : namespace in which you want the extension to deploy the objects
+  - kubernetesPullSecrets : Comma separated pull secrets (eg : `-DkubernetesPullSecrets=secret1,secret2`)
   - junitKubernetesDebug : print advanced logs about what the extension does, however it will make waiters fails as kubernetes java client `watch` is not compatible with this option
   - junitKubernetesDisableHttp2 : it will set kubernetes client to use only http 1 instead of 2

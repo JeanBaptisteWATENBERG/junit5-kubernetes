@@ -10,10 +10,7 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodList;
-import io.kubernetes.client.openapi.models.V1PodStatus;
+import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import okhttp3.OkHttpClient;
@@ -37,6 +34,7 @@ public class Pod implements KubernetesGenericObject<Pod> {
     private final V1Pod podToCreate;
     private ThreadLocal<V1Pod> createdPod = new ThreadLocal<>();
     private static final String SYSTEM_NAMESPACE = System.getProperty("kubernetesNamespace");
+    private static final String SYSTEM_PULL_SECRETS = System.getProperty("kubernetesPullSecrets");
     private static final String DEBUG = System.getProperty("junitKubernetesDebug");
     private static final String DISABLE_HTTP2 = System.getProperty("junitKubernetesDisableHttp2");
     private static final String NAMESPACE = SYSTEM_NAMESPACE != null && !SYSTEM_NAMESPACE.trim().equals("") ? SYSTEM_NAMESPACE : "default";
@@ -137,6 +135,11 @@ public class Pod implements KubernetesGenericObject<Pod> {
             }
             String podName = JUNIT_5_KUBERNETES_POD_PREFIX + UUID.randomUUID().toString().split("-")[0];
             podToCreate.getMetadata().setName(podName);
+            if (SYSTEM_PULL_SECRETS != null && !SYSTEM_PULL_SECRETS.isEmpty() && podToCreate.getSpec() != null) {
+                for (String secret : SYSTEM_PULL_SECRETS.split(",")) {
+                    podToCreate.getSpec().addImagePullSecretsItem(new V1LocalObjectReferenceBuilder().withName(secret).build());
+                }
+            }
             V1Pod createdPod = coreV1Api.createNamespacedPod(NAMESPACE, podToCreate, null, null, null);
             this.createdPod.set(createdPod);
             if (this.waitStrategy != null) {

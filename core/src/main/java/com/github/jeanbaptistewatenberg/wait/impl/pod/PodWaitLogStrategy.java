@@ -1,7 +1,6 @@
-package com.github.jeanbaptistewatenberg.wait.impl;
+package com.github.jeanbaptistewatenberg.wait.impl.pod;
 
 import com.github.jeanbaptistewatenberg.wait.WaitStrategy;
-import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -14,27 +13,27 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Scanner;
 
-public class WaitLogStrategy extends WaitStrategy {
+public class PodWaitLogStrategy extends WaitStrategy<V1Pod> {
     private String text;
     private int times = 1;
 
-    public WaitLogStrategy(String text) {
+    public PodWaitLogStrategy(String text) {
         super();
         this.text = text;
     }
 
-    public WaitLogStrategy(String text, int times) {
+    public PodWaitLogStrategy(String text, int times) {
         super();
         this.text = text;
         this.times = times;
     }
 
-    public WaitLogStrategy(String text, Duration timeout) {
+    public PodWaitLogStrategy(String text, Duration timeout) {
         super(timeout);
         this.text = text;
     }
 
-    public WaitLogStrategy(String text, int times, Duration timeout) {
+    public PodWaitLogStrategy(String text, int times, Duration timeout) {
         super(timeout);
         this.text = text;
         this.times = times;
@@ -50,17 +49,17 @@ public class WaitLogStrategy extends WaitStrategy {
 
 
     @Override
-    public void apply(Watch<V1Pod> podWatch, final V1Pod createdPod) throws ApiException {
+    public void apply(Watch<V1Pod> resourceWatch, V1Pod createdResource) throws ApiException {
         LocalDateTime startTime = LocalDateTime.now();
         PodLogs logs = new PodLogs();
         //Wait pod to start
 
-        for (Watch.Response<V1Pod> item : podWatch) {
+        for (Watch.Response<V1Pod> item : resourceWatch) {
             String name = item.object.getMetadata().getName();
-            if (name.equals(createdPod.getMetadata().getName())) {
+            if (name.equals(createdResource.getMetadata().getName())) {
                 V1PodStatus podStatus = item.object.getStatus();
                 if (LocalDateTime.now().isAfter(startTime.plus(this.getTimeout()))) {
-                    throw new RuntimeException("Failed to start pod " + createdPod + " before timeout " + this.getTimeout());
+                    throw new RuntimeException("Failed to start resource " + createdResource + " before timeout " + this.getTimeout());
                 }
                 if (podStatus == null || podStatus.getPhase().equalsIgnoreCase("Pending") || podStatus.getPhase().equalsIgnoreCase("Unknown")) {
                     continue;
@@ -70,7 +69,7 @@ public class WaitLogStrategy extends WaitStrategy {
         }
 
         //Read pods logs
-        try (InputStream is = logs.streamNamespacedPodLog(createdPod)) {
+        try (InputStream is = logs.streamNamespacedPodLog(createdResource)) {
             Scanner sc = new Scanner(is);
             int conditionMetTimes = 0;
             String textOrRegex = this.getText();
@@ -87,7 +86,7 @@ public class WaitLogStrategy extends WaitStrategy {
             }
 
             if (conditionMetTimes != howManyTimesShouldConditionMet) {
-                throw new RuntimeException("Failed to find (x" + howManyTimesShouldConditionMet + ") " + textOrRegex + " in log of pod " + createdPod + " before timeout " + this.getTimeout());
+                throw new RuntimeException("Failed to find (x" + howManyTimesShouldConditionMet + ") " + textOrRegex + " in log of resource " + createdResource + " before timeout " + this.getTimeout());
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -6,6 +6,6 @@ import io.kubernetes.client.util.Watch;
 
 import java.io.IOException;
 
-public interface IWaitStrategy {
-    void apply(Watch<V1Pod> podWatch, final V1Pod createdPod) throws ApiException;
+public interface IWaitStrategy<T> {
+    void apply(Watch<T> resourceWatch, final T createdResource) throws ApiException;
 }

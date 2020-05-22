@@ -1,10 +1,9 @@
 package com.github.jeanbaptistewatenberg;
 
 import com.github.jeanbaptistewatenberg.impl.GenericPodBuilder;
-import com.github.jeanbaptistewatenberg.wait.impl.WaitLogStrategy;
+import com.github.jeanbaptistewatenberg.wait.impl.pod.PodWaitLogStrategy;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import io.kubernetes.client.openapi.models.V1EnvVar;
 import org.junit.jupiter.api.Test;
 
 import java.sql.ResultSet;
@@ -47,7 +46,7 @@ public class TestWaitForLog {
             .endEnv()
             .endContainer()
             .endSpec()
-            .withWaitStrategy(new WaitLogStrategy(".*database system is ready to accept connections.*", 2, Duration.ofSeconds(60)))
+            .withWaitStrategy(new PodWaitLogStrategy(".*database system is ready to accept connections.*", 2, Duration.ofSeconds(60)))
             .build();
 
     @Test

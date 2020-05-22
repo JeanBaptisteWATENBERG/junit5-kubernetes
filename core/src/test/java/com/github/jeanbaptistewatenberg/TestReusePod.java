@@ -1,17 +1,11 @@
 package com.github.jeanbaptistewatenberg;
 
 import com.github.jeanbaptistewatenberg.impl.GenericPodBuilder;
-import com.github.jeanbaptistewatenberg.wait.impl.WaitRunningStatusStrategy;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import com.github.jeanbaptistewatenberg.wait.impl.pod.PodWaitRunningStatusStrategy;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
@@ -37,7 +31,7 @@ public class TestReusePod {
             .endPort()
             .endContainer()
             .endSpec()
-            .withWaitStrategy(new WaitRunningStatusStrategy())
+            .withWaitStrategy(new PodWaitRunningStatusStrategy())
             .build();
 
     @ParameterizedTest

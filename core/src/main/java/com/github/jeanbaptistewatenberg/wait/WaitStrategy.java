@@ -2,7 +2,7 @@ package com.github.jeanbaptistewatenberg.wait;
 
 import java.time.Duration;
 
-public abstract class WaitStrategy implements IWaitStrategy {
+public abstract class WaitStrategy<T> implements IWaitStrategy<T> {
     private Duration timeout = Duration.ofSeconds(30);
 
     public WaitStrategy() {

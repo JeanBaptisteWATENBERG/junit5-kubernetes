@@ -1,11 +1,8 @@
 package com.github.jeanbaptistewatenberg;
 
 import com.github.jeanbaptistewatenberg.wait.WaitStrategy;
-import com.github.jeanbaptistewatenberg.wait.impl.WaitLogStrategy;
-import com.github.jeanbaptistewatenberg.wait.impl.WaitRunningStatusStrategy;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
@@ -17,11 +14,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.Scanner;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -30,7 +24,7 @@ import java.util.stream.Collectors;
 public class Pod implements KubernetesGenericObject<Pod> {
     public static final String JUNIT_5_KUBERNETES_POD_PREFIX = "junit5-kubernetes-pod-";
     private final CoreV1Api coreV1Api;
-    private WaitStrategy waitStrategy;
+    private WaitStrategy<V1Pod> waitStrategy;
     private final V1Pod podToCreate;
     private ThreadLocal<V1Pod> createdPod = new ThreadLocal<>();
     private static final String SYSTEM_NAMESPACE = System.getProperty("kubernetesNamespace");

@@ -2,7 +2,7 @@ package com.github.jeanbaptistewatenberg.impl;
 
 import com.github.jeanbaptistewatenberg.Pod;
 import com.github.jeanbaptistewatenberg.wait.WaitStrategy;
-import com.github.jeanbaptistewatenberg.wait.impl.WaitRunningStatusStrategy;
+import com.github.jeanbaptistewatenberg.wait.impl.pod.PodWaitRunningStatusStrategy;
 import io.kubernetes.client.fluent.VisitableBuilder;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodFluent;
@@ -10,7 +10,7 @@ import io.kubernetes.client.openapi.models.V1PodFluentImpl;
 
 public class GenericPodBuilder extends V1PodFluentImpl<GenericPodBuilder> implements VisitableBuilder<Pod,GenericPodBuilder> {
 
-    private WaitStrategy waitStrategy = new WaitRunningStatusStrategy();
+    private WaitStrategy waitStrategy = new PodWaitRunningStatusStrategy();
 
     V1PodFluent<?> fluent;
     Boolean validationEnabled;
@@ -62,7 +62,7 @@ public class GenericPodBuilder extends V1PodFluentImpl<GenericPodBuilder> implem
         this.validationEnabled = validationEnabled;
     }
 
-    public GenericPodBuilder withWaitStrategy(WaitStrategy waitStrategy) {
+    public GenericPodBuilder withWaitStrategy(WaitStrategy<V1Pod> waitStrategy) {
         this.waitStrategy = waitStrategy;
         return this;
     }

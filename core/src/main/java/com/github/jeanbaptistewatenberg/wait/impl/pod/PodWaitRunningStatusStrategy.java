@@ -1,4 +1,4 @@
-package com.github.jeanbaptistewatenberg.wait.impl;
+package com.github.jeanbaptistewatenberg.wait.impl.pod;
 
 import com.github.jeanbaptistewatenberg.wait.WaitStrategy;
 import com.google.gson.reflect.TypeToken;
@@ -10,7 +10,7 @@ import io.kubernetes.client.util.Watch;
 import java.io.IOException;
 import java.time.LocalDateTime;
 
-public class WaitRunningStatusStrategy extends WaitStrategy {
+public class PodWaitRunningStatusStrategy extends WaitStrategy<V1Pod> {
 
     @Override
     public void apply(Watch<V1Pod> podWatch, V1Pod createdPod) {

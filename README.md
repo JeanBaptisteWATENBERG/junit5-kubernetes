@@ -9,14 +9,14 @@ It hence fills the lack of kubernetes support of testcontainers while the librar
 <dependency>
   <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
   <artifactId>core</artifactId>
-  <version>1.0.0</version>
+  <version>2.0.0</version>
 </dependency>
 ```
 
 ## Gradle installation
 
 ```
-implementation("com.github.jeanbaptistewatenberg.junit5kubernetes:core:1.0.0")
+testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:core:2.0.0")
 ```
 
 ## Usage
@@ -83,3 +83,52 @@ Available `WaitStrategies` are :
   - kubernetesPullSecrets : Comma separated pull secrets (eg : `-DkubernetesPullSecrets=secret1,secret2`)
   - junitKubernetesDebug : print advanced logs about what the extension does, however it will make waiters fails as kubernetes java client `watch` is not compatible with this option
   - junitKubernetesDisableHttp2 : it will set kubernetes client to use only http 1 instead of 2
+
+## Common helpers
+
+### PostgreSQL helper
+
+#### Maven
+
+```xml
+<dependency>
+  <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
+  <artifactId>postgresql</artifactId>
+  <version>2.0.0</version>
+</dependency>
+```
+
+#### Gradle
+
+```
+testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:postgresql:2.0.0")
+```
+
+#### Usage
+
+```java
+@JunitKubernetes
+public class Test {
+
+    @KubernetesObject
+    private PostgreSQLPod pod = new PostgreSQLPod();
+
+    @Test
+    void should_start_a_pod() throws IOException {
+        HikariConfig hikariConfig = new HikariConfig();
+        hikariConfig.setJdbcUrl(pod.getJdbcUrl());
+        hikariConfig.setUsername(pod.getUsername());
+        hikariConfig.setPassword(pod.getPassword());
+
+        try (HikariDataSource ds = new HikariDataSource(hikariConfig)) {
+            Statement statement = ds.getConnection().createStatement();
+            statement.execute("SELECT 1");
+            ResultSet resultSet = statement.getResultSet();
+            resultSet.next();
+
+            int resultSetInt = resultSet.getInt(1);
+            assertThat(resultSetInt).isEqualTo(1);
+        }
+    }
+}
+```

@@ -55,7 +55,7 @@ public class Test {
 }
 ```
 
-By default `Junit5-kubernetes` will create a new pod for each of your tests. If you want ot reuse your pod accross your tests you can simply switch your `@KubernetesObject` to be `static`.
+By default `Junit5-kubernetes` will create a new pod for each of your tests. If you want to reuse your pod accross your tests you can simply switch your `@KubernetesObject` to be `static`.
 
 ### GenericPodBuilder
 
@@ -72,8 +72,9 @@ A `WaitStrategy` define the conditions your pod should meet before being conside
 
 Available `WaitStrategies` are :
 
- - `WaitRunningStatusStrategy` : Will wait until the Pod swith to "Running" phase (https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)
- - `WaitLogStrategy` : Will wait for a particular event in the logs (eg. [TestWaitForLog.java](./core/src/test/java/com/github/jeanbaptistewatenberg/TestWaitForLog.java))
+ - `PodWaitRunningStatusStrategy` : Will wait until the Pod swith to "Running" phase (https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)
+ - `PodWaitReadyStrategy` : Will wait until the Pod containers swith to "Ready" status (https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)
+ - `PodWaitLogStrategy` : Will wait for a particular event in the logs (eg. [TestWaitForLog.java](./core/src/test/java/com/github/jeanbaptistewatenberg/TestWaitForLog.java))
  
  ### Configuration options
  

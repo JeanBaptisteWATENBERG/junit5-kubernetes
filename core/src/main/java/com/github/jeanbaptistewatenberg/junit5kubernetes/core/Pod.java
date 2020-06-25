@@ -1,19 +1,32 @@
 package com.github.jeanbaptistewatenberg.junit5kubernetes.core;
 
 import com.github.jeanbaptistewatenberg.junit5kubernetes.core.wait.WaitStrategy;
+import com.google.common.io.ByteStreams;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import io.kubernetes.client.Copy;
+import io.kubernetes.client.Exec;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.models.*;
+import io.kubernetes.client.openapi.models.V1LocalObjectReferenceBuilder;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -61,7 +74,7 @@ public class Pod extends KubernetesGenericObject<Pod> {
             coreV1Api = new CoreV1Api(client);
 
         } catch (IOException e) {
-            throw new  RuntimeException(e);
+            throw new RuntimeException(e);
         }
         return coreV1Api;
     }
@@ -108,17 +121,86 @@ public class Pod extends KubernetesGenericObject<Pod> {
                 }
                 return retrievedPod.getStatus().getHostIP();
             } catch (ApiException e) {
-                return logAnThrowApiException(e);
+                throw logAndThrowApiException(e);
             }
         } else {
             throw new RuntimeException("Can't get ip of a non running object.");
         }
     }
 
-    private static String logAnThrowApiException(ApiException e) {
+    public ExecResult execInPod(String... command) {
+        V1Pod v1Pod = this.createdPod.get();
+        if (v1Pod == null) {
+            throw new RuntimeException("Can't exec in a non running pod.");
+        }
+
+        Exec exec = new Exec();
+
+        try {
+            final Process proc = exec.exec(
+                    NAMESPACE,
+                    v1Pod.getMetadata().getName(),
+                    command,
+                    false,
+                    true
+            );
+
+            Path tempOutFile = Files.createTempFile("junit5-kubernetes-output-temp", ".log");
+            FileOutputStream outputStream = new FileOutputStream(tempOutFile.toFile());
+            Path tempErrorFile = Files.createTempFile("junit5-kubernetes-error-temp", ".log");
+            FileOutputStream errorStream = new FileOutputStream(tempErrorFile.toFile());
+
+            Thread out =
+                    new Thread(
+                            () -> {
+                                try {
+                                    ByteStreams.copy(proc.getInputStream(), outputStream);
+                                } catch (IOException ex) {
+                                    ex.printStackTrace();
+                                }
+                            });
+            out.start();
+
+            Thread errors =
+                    new Thread(
+                            () -> {
+                                try {
+                                    ByteStreams.copy(proc.getErrorStream(), errorStream);
+                                } catch (IOException ex) {
+                                    ex.printStackTrace();
+                                }
+                            });
+            errors.start();
+
+            proc.waitFor();
+
+            return new ExecResult(proc, tempOutFile, tempErrorFile);
+        } catch (ApiException e) {
+            throw logAndThrowApiException(e);
+        } catch (InterruptedException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void copyFileToPodContainer(String containerName, Path srcPath, Path destPath) {
+        V1Pod v1Pod = this.createdPod.get();
+        if (v1Pod == null) {
+            throw new RuntimeException("Can't copy to a non running pod.");
+        }
+        Copy copy = new Copy();
+        try {
+            copy.copyFileToPod(NAMESPACE, v1Pod.getMetadata().getName(), containerName, srcPath, destPath);
+        } catch (ApiException e) {
+            throw logAndThrowApiException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static RuntimeException logAndThrowApiException(ApiException e) {
         LOGGER.severe("Kubernetes API replied with " + e.getCode() + " status code and body " + e.getResponseBody());
         System.out.println("Kubernetes API replied with " + e.getCode() + " status code and body " + e.getResponseBody());
-        throw new RuntimeException(e.getResponseBody(), e);
+        return new RuntimeException(e.getResponseBody(), e);
     }
 
     @Override
@@ -138,17 +220,18 @@ public class Pod extends KubernetesGenericObject<Pod> {
             V1Pod createdPod = coreV1Api.createNamespacedPod(NAMESPACE, podToCreate, null, null, null);
             this.createdPod.set(createdPod);
             if (this.waitStrategy != null) {
-                try(Watch<V1Pod> watch = Watch.createWatch(
+                try (Watch<V1Pod> watch = Watch.createWatch(
                         coreV1Api.getApiClient(),
                         coreV1Api.listNamespacedPodCall(
                                 NAMESPACE, null, null, null, null, null,
                                 null, null, null, true,
                                 null),
-                        new TypeToken<Watch.Response<V1Pod>>() {}.getType())) {
-                this.waitStrategy.apply(watch, createdPod);
+                        new TypeToken<Watch.Response<V1Pod>>() {
+                        }.getType())) {
+                    this.waitStrategy.apply(watch, createdPod);
                 } catch (IOException | ApiException e) {
                     if (e instanceof ApiException) {
-                        logAnThrowApiException((ApiException) e);
+                        throw logAndThrowApiException((ApiException) e);
                     }
                     throw new RuntimeException(e);
                 }
@@ -156,7 +239,7 @@ public class Pod extends KubernetesGenericObject<Pod> {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> removePod(podName, coreV1Api)));
             onKubernetesObjectReady();
         } catch (ApiException e) {
-            logAnThrowApiException(e);
+            throw logAndThrowApiException(e);
         }
     }
 
@@ -174,16 +257,14 @@ public class Pod extends KubernetesGenericObject<Pod> {
         try {
             coreV1Api.deleteNamespacedPod(podName, NAMESPACE, null, null, null, null, null, null);
         } catch (ApiException e) {
-            logAnThrowApiException(e);
+            throw logAndThrowApiException(e);
         } catch (JsonSyntaxException e) {
             if (e.getCause() instanceof IllegalStateException) {
                 IllegalStateException ise = (IllegalStateException) e.getCause();
                 if (ise.getMessage() != null && ise.getMessage().contains("Expected a string but was BEGIN_OBJECT")) {
                     // Catching exception because of issue https://github.com/kubernetes-client/java/issues/86
-                }
-                else throw e;
-            }
-            else throw e;
+                } else throw e;
+            } else throw e;
         }
     }
 
@@ -193,5 +274,76 @@ public class Pod extends KubernetesGenericObject<Pod> {
                 "waitStrategy=" + waitStrategy +
                 "V1Pod=" + podToCreate +
                 '}';
+    }
+
+    public class ExecResult implements AutoCloseable {
+        private final int exitCode;
+        private final Process process;
+        private final File tempOutFile;
+        private final File tempErrorFile;
+
+        public ExecResult(Process process, Path tempOutFile, Path tempErrorFile) {
+            this.exitCode = process.exitValue();
+            this.process = process;
+            this.tempOutFile = tempOutFile.toFile();
+            this.tempErrorFile = tempErrorFile.toFile();
+        }
+
+        public int getExitCode() {
+            return exitCode;
+        }
+
+        public InputStream getStandardOut() {
+            if (!tempOutFile.exists()) {
+                return null;
+            }
+
+            try {
+                return new FileInputStream(tempOutFile);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public String consumeStandardOutAsString(Charset charset) {
+            if (!tempOutFile.exists()) {
+                return "";
+            }
+
+            try {
+                return IOUtils.toString(getStandardOut(), charset);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public InputStream getStandardError() {
+            if (!tempErrorFile.exists()) {
+                return null;
+            }
+            try {
+                return new FileInputStream(tempErrorFile);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public String consumeStandardErrorAsString(Charset charset) {
+            if (!tempErrorFile.exists()) {
+                return "";
+            }
+            try {
+                return IOUtils.toString(getStandardError(), charset);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public void close() {
+            process.destroy();
+            tempErrorFile.deleteOnExit();
+            tempOutFile.deleteOnExit();
+        }
     }
 }

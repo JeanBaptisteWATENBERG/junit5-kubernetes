@@ -9,14 +9,15 @@ It hence fills the lack of kubernetes support of testcontainers while the librar
 <dependency>
   <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
   <artifactId>core</artifactId>
-  <version>2.0.0</version>
+  <version>2.1.0</version>
+  <scope>test</scope>
 </dependency>
 ```
 
 ## Gradle installation
 
 ```
-testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:core:2.0.0")
+testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:core:2.1.0")
 ```
 
 ## Usage
@@ -95,14 +96,14 @@ Available `WaitStrategies` are :
 <dependency>
   <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
   <artifactId>postgresql</artifactId>
-  <version>2.0.0</version>
+  <version>2.1.0</version>
 </dependency>
 ```
 
 #### Gradle
 
 ```
-testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:postgresql:2.0.0")
+testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:postgresql:2.1.0")
 ```
 
 #### Usage
@@ -130,6 +131,46 @@ public class Test {
             int resultSetInt = resultSet.getInt(1);
             assertThat(resultSetInt).isEqualTo(1);
         }
+    }
+}
+```
+
+### RabbitMQ helper
+
+#### Maven
+
+```xml
+<dependency>
+  <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
+  <artifactId>rabbitmq</artifactId>
+  <version>2.1.0</version>
+</dependency>
+```
+
+#### Gradle
+
+```
+testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:rabbitmq:2.1.0")
+```
+
+#### Usage
+
+```java
+@JunitKubernetes
+public class Test {
+
+    @KubernetesObject
+    private RabbitMQPod pod = new RabbitMQPod();
+
+    @Test
+    void should_start_a_pod() throws IOException {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setUri(pod.getAmqpUrl());
+        factory.setUsername(pod.getAdminUsername());
+        factory.setPassword(pod.getAdminPassword());
+        Connection conn = factory.newConnection();
+
+        assertThat(conn).isNotNull();
     }
 }
 ```

@@ -1,35 +1,27 @@
 package com.github.jeanbaptistewatenberg.junit5kubernetes.core;
 
 import com.github.jeanbaptistewatenberg.junit5kubernetes.core.wait.WaitStrategy;
-import com.google.common.io.ByteStreams;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.Copy;
 import io.kubernetes.client.Exec;
+import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.models.V1LocalObjectReferenceBuilder;
-import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.FileAttribute;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -45,7 +37,8 @@ public class Pod extends KubernetesGenericObject<Pod> {
     protected static final String DISABLE_HTTP2 = System.getProperty("junitKubernetesDisableHttp2");
     protected static final String NAMESPACE = SYSTEM_NAMESPACE != null && !SYSTEM_NAMESPACE.trim().equals("") ? SYSTEM_NAMESPACE : "default";
     private static final Logger LOGGER = Logger.getLogger(Pod.class.getName());
-    private final CoreV1Api coreV1Api;
+    protected final CoreV1Api coreV1Api;
+    private final List<FileToMountOnceStarted> filesToMountOnceStarted = new ArrayList<>();
 
     public Pod(V1Pod podToCreate) {
         this.podToCreate = podToCreate;
@@ -141,7 +134,7 @@ public class Pod extends KubernetesGenericObject<Pod> {
                     NAMESPACE,
                     v1Pod.getMetadata().getName(),
                     command,
-                    false,
+                    true,
                     true
             );
 
@@ -154,7 +147,7 @@ public class Pod extends KubernetesGenericObject<Pod> {
                     new Thread(
                             () -> {
                                 try {
-                                    ByteStreams.copy(proc.getInputStream(), outputStream);
+                                    IOUtils.copy(proc.getInputStream(), outputStream);
                                 } catch (IOException ex) {
                                     ex.printStackTrace();
                                 }
@@ -165,14 +158,18 @@ public class Pod extends KubernetesGenericObject<Pod> {
                     new Thread(
                             () -> {
                                 try {
-                                    ByteStreams.copy(proc.getErrorStream(), errorStream);
+                                    IOUtils.copy(proc.getErrorStream(), errorStream);
                                 } catch (IOException ex) {
                                     ex.printStackTrace();
                                 }
                             });
+
             errors.start();
 
             proc.waitFor();
+
+            out.join();
+            errors.join();
 
             return new ExecResult(proc, tempOutFile, tempErrorFile);
         } catch (ApiException e) {
@@ -197,7 +194,85 @@ public class Pod extends KubernetesGenericObject<Pod> {
         }
     }
 
-    private static RuntimeException logAndThrowApiException(ApiException e) {
+    public Pod withCopyFileToPodContainer(String containerName, Path srcPath, Path destPath) {
+        filesToMountOnceStarted.add(new FileToMountOnceStarted(containerName, srcPath, destPath));
+        return this;
+    }
+
+    private static class FileToMountOnceStarted {
+        private final String volumeMountName;
+        private String containerName;
+        private Path srcPath;
+        private Path destPath;
+
+        public FileToMountOnceStarted(String containerName, Path srcPath, Path destPath) {
+            this.containerName = containerName;
+            this.srcPath = srcPath;
+            this.destPath = destPath;
+            this.volumeMountName = UUID.randomUUID().toString().split("-")[0];
+        }
+
+        public String getContainerName() {
+            return containerName;
+        }
+
+        public Path getSrcPath() {
+            return srcPath;
+        }
+
+        public String getVolumeMountName() {
+            return volumeMountName + hashCode();
+        }
+
+        public Path getDestPath() {
+            return destPath;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            FileToMountOnceStarted that = (FileToMountOnceStarted) o;
+            return Objects.equals(volumeMountName, that.volumeMountName) &&
+                    Objects.equals(containerName, that.containerName) &&
+                    Objects.equals(srcPath, that.srcPath) &&
+                    Objects.equals(destPath, that.destPath);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(volumeMountName, containerName, srcPath, destPath);
+        }
+    }
+
+    public InputStream getLogStream() {
+        V1Pod v1Pod = this.createdPod.get();
+        if (v1Pod == null) {
+            throw new RuntimeException("Can't retrieves logs of a non running pod.");
+        }
+        PodLogs logs = new PodLogs();
+        try {
+            return logs.streamNamespacedPodLog(v1Pod);
+        } catch (ApiException e) {
+            throw logAndThrowApiException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String getLogs(String container) {
+        V1Pod v1Pod = this.createdPod.get();
+        if (v1Pod == null) {
+            throw new RuntimeException("Can't retrieves logs of a non running pod.");
+        }
+        try {
+            return coreV1Api.readNamespacedPodLog(v1Pod.getMetadata().getName(), NAMESPACE, container, false, null, null, false, null, null, false);
+        } catch (ApiException e) {
+            throw logAndThrowApiException(e);
+        }
+    }
+
+    protected static RuntimeException logAndThrowApiException(ApiException e) {
         LOGGER.severe("Kubernetes API replied with " + e.getCode() + " status code and body " + e.getResponseBody());
         System.out.println("Kubernetes API replied with " + e.getCode() + " status code and body " + e.getResponseBody());
         return new RuntimeException(e.getResponseBody(), e);
@@ -237,6 +312,8 @@ public class Pod extends KubernetesGenericObject<Pod> {
                 }
             }
             Runtime.getRuntime().addShutdownHook(new Thread(() -> removePod(podName, coreV1Api)));
+
+            filesToMountOnceStarted.forEach(fileToMountOnceStarted -> copyFileToPodContainer(fileToMountOnceStarted.getContainerName(), fileToMountOnceStarted.getSrcPath(), fileToMountOnceStarted.getDestPath()));
             onKubernetesObjectReady();
         } catch (ApiException e) {
             throw logAndThrowApiException(e);

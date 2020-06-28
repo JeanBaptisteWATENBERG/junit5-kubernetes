@@ -1,5 +1,5 @@
 dependencies {
-    api("io.kubernetes:client-java:8.0.0")
+    api("io.kubernetes:client-java:8.0.2")
     implementation("org.junit.jupiter:junit-jupiter-api:5.6.2")
     implementation("commons-io:commons-io:2.6")
 

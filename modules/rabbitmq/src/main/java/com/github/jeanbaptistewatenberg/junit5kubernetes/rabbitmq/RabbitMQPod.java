@@ -5,21 +5,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jeanbaptistewatenberg.junit5kubernetes.core.Pod;
 import com.github.jeanbaptistewatenberg.junit5kubernetes.core.PortMapper;
 import com.github.jeanbaptistewatenberg.junit5kubernetes.core.wait.impl.pod.PodWaitLogStrategy;
-import io.kubernetes.client.openapi.models.V1Container;
-import io.kubernetes.client.openapi.models.V1ContainerPort;
-import io.kubernetes.client.openapi.models.V1EnvVar;
-import io.kubernetes.client.openapi.models.V1PodBuilder;
+import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.models.*;
+import io.kubernetes.client.util.PatchUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static java.lang.String.join;
 import static java.util.Arrays.asList;
@@ -38,7 +37,7 @@ public class RabbitMQPod extends Pod {
     private static final String NAMED_HTTPS_PORT = "HTTPS_PORT_15671";
     private static final String NAMED_HTTP_PORT = "HTTP_PORT_15672";
 
-    private static final String JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER = "junit5kubernetesrabbitmqcontainer";
+    public static final String JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER = "junit5kubernetesrabbitmqcontainer";
 
     private static final Logger LOGGER = Logger.getLogger(RabbitMQPod.class.getName());
 
@@ -294,7 +293,6 @@ public class RabbitMQPod extends Pod {
      * @return This pod.
      */
     public RabbitMQPod withRabbitMQConfig(Path rabbitMQConf) {
-
         return withRabbitMQConfigSysctl(rabbitMQConf);
     }
 
@@ -310,7 +308,7 @@ public class RabbitMQPod extends Pod {
      */
     public RabbitMQPod withRabbitMQConfigSysctl(Path rabbitMQConf) {
         withEnv("RABBITMQ_CONFIG_FILE", "/etc/rabbitmq/rabbitmq-custom");
-        copyFileToPodContainer(JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER, rabbitMQConf, Paths.get("/etc/rabbitmq/rabbitmq-custom.conf"));
+        withCopyFileToPodContainer(JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER, rabbitMQConf, Paths.get("/etc/rabbitmq/rabbitmq-custom.conf"));
         return this;
     }
 
@@ -322,7 +320,7 @@ public class RabbitMQPod extends Pod {
      */
     public RabbitMQPod withRabbitMQConfigErlang(Path rabbitMQConf) {
         withEnv("RABBITMQ_CONFIG_FILE", "/etc/rabbitmq/rabbitmq-custom.config");
-        copyFileToPodContainer(JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER, rabbitMQConf, Paths.get("/etc/rabbitmq/rabbitmq-custom.config"));
+        withCopyFileToPodContainer(JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER, rabbitMQConf, Paths.get("/etc/rabbitmq/rabbitmq-custom.config"));
         return this;
     }
 
@@ -343,47 +341,6 @@ public class RabbitMQPod extends Pod {
         }
         private final String value;
 
-    }
-
-    public RabbitMQPod withSSL(
-            final Path keyFile,
-            final Path certFile,
-            final Path caFile,
-            final SslVerification verify,
-            boolean failIfNoCert,
-            int verificationDepth) {
-
-        return withSSL(keyFile, certFile, caFile, verify, failIfNoCert)
-                .withEnv("RABBITMQ_SSL_DEPTH", String.valueOf(verificationDepth));
-    }
-
-    public RabbitMQPod withSSL(
-            final Path keyFile,
-            final Path certFile,
-            final Path caFile,
-            final SslVerification verify,
-            boolean failIfNoCert) {
-
-        return withSSL(keyFile, certFile, caFile, verify)
-                .withEnv("RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT", String.valueOf(failIfNoCert));
-    }
-
-    public RabbitMQPod withSSL(
-            final Path keyFile,
-            final Path certFile,
-            final Path caFile,
-            final SslVerification verify) {
-
-        withEnv("RABBITMQ_SSL_CACERTFILE", "/etc/rabbitmq/ca_cert.pem")
-        .withEnv("RABBITMQ_SSL_CERTFILE", "/etc/rabbitmq/rabbitmq_cert.pem")
-        .withEnv("RABBITMQ_SSL_KEYFILE", "/etc/rabbitmq/rabbitmq_key.pem")
-        .withEnv("RABBITMQ_SSL_VERIFY", verify.value);
-
-        copyFileToPodContainer(JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER, certFile, Paths.get("/etc/rabbitmq/rabbitmq_cert.pem"));
-        copyFileToPodContainer(JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER, caFile, Paths.get("/etc/rabbitmq/ca_cert.pem"));
-        copyFileToPodContainer(JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER, keyFile, Paths.get("/etc/rabbitmq/rabbitmq_key.pem"));
-
-        return this;
     }
 
     @Override

@@ -20,6 +20,7 @@ public class PostgreSQLPod<SELF extends PostgreSQLPod<SELF>> extends JdbcDatabas
     private static final String DEFAULT_DATABASE_NAME = "test";
     private static final String POSTGRESQL_NAMED_PORT = "postgres-5432";
     private static final int POSTGRESQL_PORT = 5432;
+    private Integer hostPort = null;
 
     private String databaseName = DEFAULT_DATABASE_NAME;
     private String username = DEFAULT_USER;
@@ -36,6 +37,11 @@ public class PostgreSQLPod<SELF extends PostgreSQLPod<SELF>> extends JdbcDatabas
         this.waitStrategy = new PodWaitLogStrategy(".*database system is ready to accept connections.*", 2, Duration.ofSeconds(60));
     }
 
+    public PostgreSQLPod(String dockerImageName, int hostPort) {
+        this(dockerImageName);
+        this.hostPort = hostPort;
+    }
+
     @Override
     public String getDriverClassName() {
         return "org.postgresql.Driver";
@@ -44,7 +50,7 @@ public class PostgreSQLPod<SELF extends PostgreSQLPod<SELF>> extends JdbcDatabas
     @Override
     public String getJdbcUrl() {
         // Disable Postgres driver use of java.util.logging to reduce noise at startup time
-        return String.format("jdbc:postgresql://%s:%d/%s?loggerLevel=OFF", getObjectHostIp(), portMapper.getComputedPort(POSTGRESQL_NAMED_PORT), databaseName);
+        return String.format("jdbc:postgresql://%s:%d/%s?loggerLevel=OFF", getObjectHostIp(), hostPort != null ? hostPort : portMapper.getComputedPort(POSTGRESQL_NAMED_PORT), databaseName);
     }
 
     @Override
@@ -99,7 +105,7 @@ public class PostgreSQLPod<SELF extends PostgreSQLPod<SELF>> extends JdbcDatabas
         postgresContainer
             .addArgsItem("-c").addArgsItem(FSYNC_OFF_OPTION)
             .addPortsItem(new V1ContainerPort()
-                    .hostPort(portMapper.computeAvailablePort(POSTGRESQL_NAMED_PORT))
+                    .hostPort(hostPort != null ? hostPort : portMapper.computeAvailablePort(POSTGRESQL_NAMED_PORT))
                     .containerPort(POSTGRESQL_PORT)
             )
             .addEnvItem(new V1EnvVar()

@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.Copy;
 import io.kubernetes.client.Exec;
 import io.kubernetes.client.PodLogs;
+import io.kubernetes.client.custom.IntOrString;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
@@ -13,6 +14,7 @@ import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
+import io.kubernetes.client.util.Yaml;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import org.apache.commons.io.IOUtils;
@@ -25,9 +27,11 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Pod extends KubernetesGenericObject<Pod> {
     public static final String JUNIT_5_KUBERNETES_POD_PREFIX = "junit5-kubernetes-pod-";
+    public static final String JUNIT_5_KUBERNETES_LABEL = "junit5kubernetes";
     protected WaitStrategy<V1Pod> waitStrategy;
     protected final V1Pod podToCreate;
     protected final ThreadLocal<V1Pod> createdPod = new ThreadLocal<>();
@@ -35,10 +39,12 @@ public class Pod extends KubernetesGenericObject<Pod> {
     protected static final String SYSTEM_PULL_SECRETS = System.getProperty("kubernetesPullSecrets");
     protected static final String DEBUG = System.getProperty("junitKubernetesDebug");
     protected static final String DISABLE_HTTP2 = System.getProperty("junitKubernetesDisableHttp2");
+    protected static final String USE_NODE_PORT_SERVICE = System.getProperty("junitKubernetesUsePortService");
     protected static final String NAMESPACE = SYSTEM_NAMESPACE != null && !SYSTEM_NAMESPACE.trim().equals("") ? SYSTEM_NAMESPACE : "default";
     private static final Logger LOGGER = Logger.getLogger(Pod.class.getName());
     protected final CoreV1Api coreV1Api;
     private final List<FileToMountOnceStarted> filesToMountOnceStarted = new ArrayList<>();
+    private Map<Integer, Integer> mappedPorts = new HashMap<>();
 
     public Pod(V1Pod podToCreate) {
         this.podToCreate = podToCreate;
@@ -199,6 +205,10 @@ public class Pod extends KubernetesGenericObject<Pod> {
         return this;
     }
 
+    public Map<Integer, Integer> getMappedPorts() {
+        return mappedPorts;
+    }
+
     private static class FileToMountOnceStarted {
         private final String volumeMountName;
         private String containerName;
@@ -292,7 +302,51 @@ public class Pod extends KubernetesGenericObject<Pod> {
                 }
             }
             onBeforeCreateKubernetesObject();
+            podToCreate.getMetadata().putLabelsItem(JUNIT_5_KUBERNETES_LABEL, podName);
+            List<V1ServicePort> ports = new ArrayList<>();
+            if (USE_NODE_PORT_SERVICE.equalsIgnoreCase("true")) {
+                ports = podToCreate.getSpec().getContainers().stream().flatMap(container -> {
+                    if (container.getPorts() == null) {
+                        return new ArrayList<V1ServicePort>().stream();
+                    }
+
+                    return container.getPorts().stream().map(port ->
+                            new V1ServicePortBuilder()
+                                    .withPort(port.getContainerPort())
+                                    .withTargetPort(new IntOrString(port.getContainerPort()))
+                                    .build()
+                    );
+                }).collect(Collectors.toList());
+
+                podToCreate.getSpec().getContainers().forEach(container -> {
+                    container.setPorts(container.getPorts().stream().map(port -> {
+                        V1ContainerPort v1ContainerPort = new V1ContainerPort();
+                        v1ContainerPort.setContainerPort(port.getContainerPort());
+                        return v1ContainerPort;
+                    }).collect(Collectors.toList()));
+                });
+            }
             V1Pod createdPod = coreV1Api.createNamespacedPod(NAMESPACE, podToCreate, null, null, null);
+            if (USE_NODE_PORT_SERVICE.equalsIgnoreCase("true")) {
+                Map<String, String> selectorLabels = new HashMap<>();
+                selectorLabels.put(JUNIT_5_KUBERNETES_LABEL, podName);
+
+                V1Service nodePortService = new V1ServiceBuilder()
+                        .withNewMetadata()
+                            .withName(podName)
+                        .endMetadata()
+                        .withNewSpec()
+                            .withType("NodePort")
+                            .withSelector(selectorLabels)
+                            .withPorts(ports)
+                        .endSpec().build();
+
+                V1Service namespacedService = coreV1Api.createNamespacedService(NAMESPACE, nodePortService, null, null, null);
+                List<V1ServicePort> servicePorts = namespacedService.getSpec().getPorts();
+                servicePorts.forEach(port -> {
+                    mappedPorts.put(port.getPort(), port.getNodePort());
+                });
+            }
             this.createdPod.set(createdPod);
             if (this.waitStrategy != null) {
                 try (Watch<V1Pod> watch = Watch.createWatch(

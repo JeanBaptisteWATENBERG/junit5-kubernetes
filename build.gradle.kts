@@ -8,7 +8,7 @@ plugins {
 
 subprojects {
     group = "com.github.jeanbaptistewatenberg.junit5kubernetes"
-    version = "2.1.0"
+    version = "2.2.0-beta"
 
     repositories {
         mavenCentral()

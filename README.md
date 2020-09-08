@@ -9,7 +9,7 @@ It hence fills the lack of kubernetes support of testcontainers while the librar
 <dependency>
   <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
   <artifactId>core</artifactId>
-  <version>2.1.0</version>
+  <version>2.2.0-beta</version>
   <scope>test</scope>
 </dependency>
 ```
@@ -17,8 +17,17 @@ It hence fills the lack of kubernetes support of testcontainers while the librar
 ## Gradle installation
 
 ```
-testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:core:2.1.0")
+testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:core:2.2.0-beta")
 ```
+
+## *NEW* 2.2.0-beta Usage
+
+Version `2.2.0-beta` introduces a new java property `junitKubernetesUsePortService`,
+ when it is set to true it will create a `NodePort` service aside of your pods in order to ease pods access from outside your kubernetes cluster.
+ 
+I am going to test this approach in the upcoming days and stabilize it if I see some benefits from using it. 
+
+If you want to test it out you can refer to [TestUsingNodePortService.java](./core/src/test/java/com/github/jeanbaptistewatenberg/junit5kubernetes/core/TestUsingNodePortService.java) and feel free to report 
 
 ## Usage
 
@@ -96,14 +105,14 @@ Available `WaitStrategies` are :
 <dependency>
   <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
   <artifactId>postgresql</artifactId>
-  <version>2.1.0</version>
+  <version>2.2.0-beta</version>
 </dependency>
 ```
 
 #### Gradle
 
 ```
-testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:postgresql:2.1.0")
+testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:postgresql:2.2.0-beta")
 ```
 
 #### Usage
@@ -143,14 +152,14 @@ public class Test {
 <dependency>
   <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
   <artifactId>rabbitmq</artifactId>
-  <version>2.1.0</version>
+  <version>2.2.0-beta</version>
 </dependency>
 ```
 
 #### Gradle
 
 ```
-testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:rabbitmq:2.1.0")
+testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:rabbitmq:2.2.0-beta")
 ```
 
 #### Usage

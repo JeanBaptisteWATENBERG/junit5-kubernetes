@@ -39,9 +39,9 @@ public class Pod extends KubernetesGenericObject<Pod> {
     protected static final String SYSTEM_PULL_SECRETS = System.getProperty("kubernetesPullSecrets");
     protected static final String DEBUG = System.getProperty("junitKubernetesDebug");
     protected static final String DISABLE_HTTP2 = System.getProperty("junitKubernetesDisableHttp2");
-    protected static final String USE_NODE_PORT_SERVICE = System.getProperty("junitKubernetesUsePortService");
     protected static final String NAMESPACE = SYSTEM_NAMESPACE != null && !SYSTEM_NAMESPACE.trim().equals("") ? SYSTEM_NAMESPACE : "default";
     private static final Logger LOGGER = Logger.getLogger(Pod.class.getName());
+    protected final String USE_NODE_PORT_SERVICE = System.getProperty("junitKubernetesUsePortService");
     protected final CoreV1Api coreV1Api;
     private final List<FileToMountOnceStarted> filesToMountOnceStarted = new ArrayList<>();
     private Map<Integer, Integer> mappedPorts = new HashMap<>();
@@ -304,7 +304,7 @@ public class Pod extends KubernetesGenericObject<Pod> {
             onBeforeCreateKubernetesObject();
             podToCreate.getMetadata().putLabelsItem(JUNIT_5_KUBERNETES_LABEL, podName);
             List<V1ServicePort> ports = new ArrayList<>();
-            if (USE_NODE_PORT_SERVICE.equalsIgnoreCase("true")) {
+            if (USE_NODE_PORT_SERVICE != null && USE_NODE_PORT_SERVICE.equalsIgnoreCase("true")) {
                 ports = podToCreate.getSpec().getContainers().stream().flatMap(container -> {
                     if (container.getPorts() == null) {
                         return new ArrayList<V1ServicePort>().stream();
@@ -327,7 +327,7 @@ public class Pod extends KubernetesGenericObject<Pod> {
                 });
             }
             V1Pod createdPod = coreV1Api.createNamespacedPod(NAMESPACE, podToCreate, null, null, null);
-            if (USE_NODE_PORT_SERVICE.equalsIgnoreCase("true")) {
+            if (USE_NODE_PORT_SERVICE != null && USE_NODE_PORT_SERVICE.equalsIgnoreCase("true")) {
                 Map<String, String> selectorLabels = new HashMap<>();
                 selectorLabels.put(JUNIT_5_KUBERNETES_LABEL, podName);
 

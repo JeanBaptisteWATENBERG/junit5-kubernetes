@@ -35,5 +35,6 @@ public class TestUsingNodePortService {
             int status = TestUtils.responseStatus(url);
             assertThat(status).isEqualTo(200);
         }
+        System.setProperty("junitKubernetesUsePortService", "false");
     }
 }

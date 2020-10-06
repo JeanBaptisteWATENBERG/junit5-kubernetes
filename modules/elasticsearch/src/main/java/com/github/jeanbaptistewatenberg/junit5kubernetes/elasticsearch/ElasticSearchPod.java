@@ -52,18 +52,18 @@ public class ElasticSearchPod extends Pod {
     }
 
     public String getHttpHostAddress() {
-        return "http://" + getObjectHostIp() + ":" + getHttpPort();
+        return getObjectHostIp() + ":" + getHttpPort();
     }
 
     public InetSocketAddress getTcpHost() {
-        return new InetSocketAddress("http://" + getObjectHostIp(), getTcpPort());
+        return new InetSocketAddress(getObjectHostIp(), getTcpPort());
     }
 
     public Integer getHttpPort() {
         return portMapper.getComputedPort(NAMED_HTTP_PORT);
     }
 
-    private Integer getTcpPort() {
+    public Integer getTcpPort() {
         return portMapper.getComputedPort(NAMED_TCP_PORT);
     }
 

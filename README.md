@@ -9,7 +9,7 @@ It hence fills the lack of kubernetes support of testcontainers while the librar
 <dependency>
   <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
   <artifactId>core</artifactId>
-  <version>2.2.0-beta</version>
+  <version>2.3.0-beta</version>
   <scope>test</scope>
 </dependency>
 ```
@@ -17,12 +17,12 @@ It hence fills the lack of kubernetes support of testcontainers while the librar
 ## Gradle installation
 
 ```
-testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:core:2.2.0-beta")
+testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:core:2.3.0-beta")
 ```
 
-## *NEW* 2.2.0-beta Usage
+## *NEW* 2.3.0-beta Usage
 
-Version `2.2.0-beta` introduces a new java property `junitKubernetesUsePortService`,
+Version `2.3.0-beta` introduces a new java property `junitKubernetesUsePortService`,
  when it is set to true it will create a `NodePort` service aside of your pods in order to ease pods access from outside your kubernetes cluster.
  
 I am going to test this approach in the upcoming days and stabilize it if I see some benefits from using it. 
@@ -105,14 +105,14 @@ Available `WaitStrategies` are :
 <dependency>
   <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
   <artifactId>postgresql</artifactId>
-  <version>2.2.0-beta</version>
+  <version>2.3.0-beta</version>
 </dependency>
 ```
 
 #### Gradle
 
 ```
-testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:postgresql:2.2.0-beta")
+testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:postgresql:2.3.0-beta")
 ```
 
 #### Usage
@@ -152,14 +152,14 @@ public class Test {
 <dependency>
   <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
   <artifactId>rabbitmq</artifactId>
-  <version>2.2.0-beta</version>
+  <version>2.3.0-beta</version>
 </dependency>
 ```
 
 #### Gradle
 
 ```
-testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:rabbitmq:2.2.0-beta")
+testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:rabbitmq:2.3.0-beta")
 ```
 
 #### Usage
@@ -180,6 +180,45 @@ public class Test {
         Connection conn = factory.newConnection();
 
         assertThat(conn).isNotNull();
+    }
+}
+```
+
+### ElasticSearch helper
+
+#### Maven
+
+```xml
+<dependency>
+  <groupId>com.github.jeanbaptistewatenberg.junit5kubernetes</groupId>
+  <artifactId>elasticsearch</artifactId>
+  <version>2.3.0-beta</version>
+</dependency>
+```
+
+#### Gradle
+
+```
+testImplementation("com.github.jeanbaptistewatenberg.junit5kubernetes:elasticsearch:2.3.0-beta")
+```
+
+#### Usage
+
+```java
+@JunitKubernetes
+public class Test {
+
+    @KubernetesObject
+    private ElasticSearchPod pod = new ElasticSearchPod();
+
+    @Test
+    void should_start_a_pod() throws IOException {
+            HttpHost httpHost = new HttpHost(pod.getObjectHostIp(), pod.getHttpPort(), "http");
+            RestHighLevelClient restHighLevelClient = new RestHighLevelClient(RestClient.builder(httpHost));
+            IndexRequest indexRequest = new IndexRequest("anyindice");
+            indexRequest.source(Collections.singletonMap("key","value"));
+            IndexResponse response = restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
+            assertThat(response.status()).isEqualTo(RestStatus.CREATED);
     }
 }
 ```

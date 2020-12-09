@@ -41,7 +41,7 @@ public class Pod extends KubernetesGenericObject<Pod> {
     protected static final String DISABLE_HTTP2 = System.getProperty("junitKubernetesDisableHttp2");
     protected static final String NAMESPACE = SYSTEM_NAMESPACE != null && !SYSTEM_NAMESPACE.trim().equals("") ? SYSTEM_NAMESPACE : "default";
     private static final Logger LOGGER = Logger.getLogger(Pod.class.getName());
-    protected final String USE_NODE_PORT_SERVICE = System.getProperty("junitKubernetesUsePortService");
+    protected static final String USE_NODE_PORT_SERVICE = System.getProperty("junitKubernetesUsePortService");
     protected final CoreV1Api coreV1Api;
     private final List<FileToMountOnceStarted> filesToMountOnceStarted = new ArrayList<>();
     private Map<Integer, Integer> mappedPorts = new HashMap<>();
@@ -386,6 +386,10 @@ public class Pod extends KubernetesGenericObject<Pod> {
 
     private static void removePod(String podName, CoreV1Api coreV1Api) {
         try {
+            if (USE_NODE_PORT_SERVICE != null && USE_NODE_PORT_SERVICE.equalsIgnoreCase("true")) {
+                coreV1Api.deleteNamespacedService(podName, NAMESPACE, null, null, null, null, null, null);
+            }
+
             coreV1Api.deleteNamespacedPod(podName, NAMESPACE, null, null, null, null, null, null);
         } catch (ApiException e) {
             throw logAndThrowApiException(e);

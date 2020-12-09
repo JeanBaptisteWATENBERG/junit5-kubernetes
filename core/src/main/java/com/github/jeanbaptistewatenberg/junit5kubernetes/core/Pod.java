@@ -41,7 +41,6 @@ public class Pod extends KubernetesGenericObject<Pod> {
     protected static final String DISABLE_HTTP2 = System.getProperty("junitKubernetesDisableHttp2");
     protected static final String NAMESPACE = SYSTEM_NAMESPACE != null && !SYSTEM_NAMESPACE.trim().equals("") ? SYSTEM_NAMESPACE : "default";
     private static final Logger LOGGER = Logger.getLogger(Pod.class.getName());
-    protected static final String USE_NODE_PORT_SERVICE = System.getProperty("junitKubernetesUsePortService");
     protected final CoreV1Api coreV1Api;
     private final List<FileToMountOnceStarted> filesToMountOnceStarted = new ArrayList<>();
     private Map<Integer, Integer> mappedPorts = new HashMap<>();
@@ -304,7 +303,10 @@ public class Pod extends KubernetesGenericObject<Pod> {
             onBeforeCreateKubernetesObject();
             podToCreate.getMetadata().putLabelsItem(JUNIT_5_KUBERNETES_LABEL, podName);
             List<V1ServicePort> ports = new ArrayList<>();
-            if (USE_NODE_PORT_SERVICE != null && USE_NODE_PORT_SERVICE.equalsIgnoreCase("true")) {
+
+            boolean useNodePort = System.getProperty("junitKubernetesUsePortService") != null && System.getProperty("junitKubernetesUsePortService").equalsIgnoreCase("true");
+
+            if (useNodePort) {
                 ports = podToCreate.getSpec().getContainers().stream().flatMap(container -> {
                     if (container.getPorts() == null) {
                         return new ArrayList<V1ServicePort>().stream();
@@ -327,7 +329,7 @@ public class Pod extends KubernetesGenericObject<Pod> {
                 });
             }
             V1Pod createdPod = coreV1Api.createNamespacedPod(NAMESPACE, podToCreate, null, null, null);
-            if (USE_NODE_PORT_SERVICE != null && USE_NODE_PORT_SERVICE.equalsIgnoreCase("true")) {
+            if (useNodePort) {
                 Map<String, String> selectorLabels = new HashMap<>();
                 selectorLabels.put(JUNIT_5_KUBERNETES_LABEL, podName);
 
@@ -386,7 +388,8 @@ public class Pod extends KubernetesGenericObject<Pod> {
 
     private static void removePod(String podName, CoreV1Api coreV1Api) {
         try {
-            if (USE_NODE_PORT_SERVICE != null && USE_NODE_PORT_SERVICE.equalsIgnoreCase("true")) {
+            boolean useNodePort = System.getProperty("junitKubernetesUsePortService") != null && System.getProperty("junitKubernetesUsePortService").equalsIgnoreCase("true");
+            if (useNodePort) {
                 coreV1Api.deleteNamespacedService(podName, NAMESPACE, null, null, null, null, null, null);
             }
 

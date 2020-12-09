@@ -34,14 +34,6 @@ subprojects {
     publishing {
         repositories {
             maven {
-                name = "GitHubPackages"
-                url = uri("https://maven.pkg.github.com/JeanBaptisteWATENBERG/junit5-kubernetes")
-                credentials {
-                    username = project.findProperty("gpr.user") as String? ?: System.getenv("USERNAME")
-                    password = project.findProperty("gpr.key") as String? ?: System.getenv("TOKEN")
-                }
-            }
-            maven {
                 name = "MavenCentral"
                 val releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
                 val snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"

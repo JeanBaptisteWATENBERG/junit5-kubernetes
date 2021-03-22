@@ -350,6 +350,8 @@ public class Pod extends KubernetesGenericObject<Pod> {
                 });
             }
             this.createdPod.set(createdPod);
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> removePod(podName, coreV1Api)));
+
             if (this.waitStrategy != null) {
                 try (Watch<V1Pod> watch = Watch.createWatch(
                         coreV1Api.getApiClient(),
@@ -367,7 +369,6 @@ public class Pod extends KubernetesGenericObject<Pod> {
                     throw new RuntimeException(e);
                 }
             }
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> removePod(podName, coreV1Api)));
 
             filesToMountOnceStarted.forEach(fileToMountOnceStarted -> copyFileToPodContainer(fileToMountOnceStarted.getContainerName(), fileToMountOnceStarted.getSrcPath(), fileToMountOnceStarted.getDestPath()));
             onKubernetesObjectReady();

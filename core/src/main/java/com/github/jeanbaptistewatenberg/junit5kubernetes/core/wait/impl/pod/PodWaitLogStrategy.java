@@ -12,6 +12,11 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Scanner;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class PodWaitLogStrategy extends WaitStrategy<V1Pod> {
     private String text;
@@ -68,27 +73,37 @@ public class PodWaitLogStrategy extends WaitStrategy<V1Pod> {
             }
         }
 
-        //Read pods logs
+        readPodsLogs(logs, createdResource);
+    }
+
+    private void readPodsLogs(PodLogs logs, V1Pod createdResource) {
+
         try (InputStream is = logs.streamNamespacedPodLog(createdResource)) {
-            Scanner sc = new Scanner(is);
-            int conditionMetTimes = 0;
             String textOrRegex = this.getText();
+            AtomicInteger conditionMetTimes = new AtomicInteger();
             int howManyTimesShouldConditionMet = this.getTimes();
-            while (sc.hasNextLine() && LocalDateTime.now().isBefore(startTime.plus(this.getTimeout()))) {
-                String input = sc.nextLine();
-                //Check if log line matches the expected text or regex
-                if (input.matches(textOrRegex) || input.contains(textOrRegex)) {
-                    conditionMetTimes++;
-                    if (conditionMetTimes == howManyTimesShouldConditionMet) {
-                        break;
+
+            CompletableFuture.runAsync(() -> {
+                Scanner sc = new Scanner(is);
+                while (sc.hasNextLine()) {
+                    String input = sc.nextLine();
+                    //Check if log line matches the expected text or regex
+                    if (input.matches(textOrRegex) || input.contains(textOrRegex)) {
+                        conditionMetTimes.getAndIncrement();
+                        if (conditionMetTimes.get() == howManyTimesShouldConditionMet) {
+                            break;
+                        }
                     }
                 }
+            }).get(this.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
+
+            if (conditionMetTimes.get() != howManyTimesShouldConditionMet) {
+                throw new RuntimeException(
+                        "Failed to find (x" + howManyTimesShouldConditionMet + ") " + textOrRegex + " in log of resource " + createdResource + " before timeout "
+                                + this.getTimeout());
             }
 
-            if (conditionMetTimes != howManyTimesShouldConditionMet) {
-                throw new RuntimeException("Failed to find (x" + howManyTimesShouldConditionMet + ") " + textOrRegex + " in log of resource " + createdResource + " before timeout " + this.getTimeout());
-            }
-        } catch (IOException e) {
+        } catch (InterruptedException | ExecutionException | TimeoutException | ApiException | IOException e) {
             throw new RuntimeException(e);
         }
     }

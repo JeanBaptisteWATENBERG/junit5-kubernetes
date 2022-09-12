@@ -189,7 +189,7 @@ class RabbitMQPodTest {
             pod.create();
 
             String logs = pod.getLogs(JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER);
-            assertThat(logs).contains("config file(s) : /etc/rabbitmq/rabbitmq-custom.config");
+            assertThat(logs).contains("config file(s) : /etc/rabbitmq/rabbitmq-custom.conf");
             assertThat(logs).doesNotContain(" (not found)");
         }
     }

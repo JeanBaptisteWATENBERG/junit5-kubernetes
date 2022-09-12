@@ -22,7 +22,7 @@ jobs:
         settings-path: ${{ github.workspace }} # location for the settings.xml file
 
     - name: Kind Cluster
-      uses: helm/kind-action@v1.0.0-rc.1
+      uses: helm/kind-action@v1.3.0
     - name: Build with Gradle
       run: gradle build -DjunitKubernetesDisableHttp2=true
 

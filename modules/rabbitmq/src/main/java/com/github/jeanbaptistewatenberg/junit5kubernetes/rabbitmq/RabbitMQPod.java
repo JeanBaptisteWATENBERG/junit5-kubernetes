@@ -25,7 +25,7 @@ import static java.util.Arrays.asList;
 
 public class RabbitMQPod extends Pod {
     public static final String DEFAULT_IMAGE = "rabbitmq";
-    public static final String DEFAULT_TAG = "3-management-alpine";
+    public static final String DEFAULT_TAG = "3.7.25-management-alpine";
 
     private static final int DEFAULT_AMQP_PORT = 5672;
     private static final int DEFAULT_AMQPS_PORT = 5671;

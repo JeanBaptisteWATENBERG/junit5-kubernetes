@@ -282,8 +282,8 @@ public class Pod extends KubernetesGenericObject<Pod> {
     }
 
     protected static RuntimeException logAndThrowApiException(ApiException e) {
-        LOGGER.severe("Kubernetes API replied with " + e.getCode() + " status code and body " + e.getResponseBody());
-        System.out.println("Kubernetes API replied with " + e.getCode() + " status code and body " + e.getResponseBody());
+        LOGGER.severe("Kubernetes API replied with " + e.getCode() + " status code, body " + e.getResponseBody() + " and message " + e.getMessage());
+        System.out.println("Kubernetes API replied with " + e.getCode() + " status code and body " + e.getResponseBody()+ " and message " + e.getMessage());
         return new RuntimeException(e.getResponseBody(), e);
     }
 

@@ -315,21 +315,14 @@ public class RabbitMQPod extends Pod {
     /**
      * Overwrites the default RabbitMQ configuration file with the supplied one.
      *
+     * @deprecated Deprecated with rabbitmq 3.7+, use withRabbitMQConfigSysctl instead
      * @param rabbitMQConf The rabbitmq.config file to use (in erlang format)
      * @return This pod.
      */
+    @Deprecated
     public RabbitMQPod withRabbitMQConfigErlang(Path rabbitMQConf) {
         withEnv("RABBITMQ_CONFIG_FILE", "/etc/rabbitmq/rabbitmq-custom.config");
         withCopyFileToPodContainer(JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER, rabbitMQConf, Paths.get("/etc/rabbitmq/rabbitmq-custom.config"));
-        return this;
-    }
-
-    public RabbitMQPod withEnv(String key, String value) {
-        V1Container rabbitMQContainer = this.podToCreate.getSpec().getContainers().get(0);
-        rabbitMQContainer.addEnvItem(new V1EnvVar()
-            .name(key)
-            .value(value)
-        );
         return this;
     }
 

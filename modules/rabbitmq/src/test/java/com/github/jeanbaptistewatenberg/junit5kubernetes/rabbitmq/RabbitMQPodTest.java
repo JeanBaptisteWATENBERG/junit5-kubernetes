@@ -63,7 +63,7 @@ class RabbitMQPodTest {
 
             try (Pod.ExecResult execResult = pod.execInPod("rabbitmqctl", "list_queues", "name", "arguments")) {
                 assertThat(execResult.consumeStandardOutAsString(StandardCharsets.UTF_8))
-                    .containsPattern("queue-one");
+                        .containsPattern("queue-one");
             }
 
             try (Pod.ExecResult execResult = pod.execInPod("rabbitmqctl", "list_queues", "name", "arguments")) {
@@ -102,51 +102,51 @@ class RabbitMQPodTest {
                         .contains("queue1", "queue2");
             }
 
-            try(Pod.ExecResult execResult = pod.execInPod("rabbitmqadmin", "list", "exchanges")) {
+            try (Pod.ExecResult execResult = pod.execInPod("rabbitmqadmin", "list", "exchanges")) {
                 assertThat(execResult.consumeStandardOutAsString(StandardCharsets.UTF_8))
-                    .contains("direct-exchange", "topic-exchange");
+                        .contains("direct-exchange", "topic-exchange");
             }
 
 
-            try(Pod.ExecResult execResult = pod.execInPod("rabbitmqadmin", "list", "bindings")) {
+            try (Pod.ExecResult execResult = pod.execInPod("rabbitmqadmin", "list", "bindings")) {
                 assertThat(execResult.consumeStandardOutAsString(StandardCharsets.UTF_8))
-                    .contains("direct-exchange");
+                        .contains("direct-exchange");
             }
 
 
-            try(Pod.ExecResult execResult = pod.execInPod("rabbitmqadmin", "list", "users")) {
+            try (Pod.ExecResult execResult = pod.execInPod("rabbitmqadmin", "list", "users")) {
                 assertThat(execResult.consumeStandardOutAsString(StandardCharsets.UTF_8))
-                    .contains("user1", "user2");
+                        .contains("user1", "user2");
             }
 
 
-            try(Pod.ExecResult execResult = pod.execInPod("rabbitmqadmin", "list", "policies")) {
+            try (Pod.ExecResult execResult = pod.execInPod("rabbitmqadmin", "list", "policies")) {
                 assertThat(execResult.consumeStandardOutAsString(StandardCharsets.UTF_8))
-                    .contains("max length policy", "alternate exchange policy");
+                        .contains("max length policy", "alternate exchange policy");
             }
 
 
-            try(Pod.ExecResult execResult = pod.execInPod("rabbitmqadmin", "list", "policies", "--vhost=vhost2")) {
+            try (Pod.ExecResult execResult = pod.execInPod("rabbitmqadmin", "list", "policies", "--vhost=vhost2")) {
                 assertThat(execResult.consumeStandardOutAsString(StandardCharsets.UTF_8))
-                    .contains("ha-all", "ha-sync-mode");
+                        .contains("ha-all", "ha-sync-mode");
             }
 
 
-            try(Pod.ExecResult execResult = pod.execInPod("rabbitmqadmin", "list", "operator_policies")) {
+            try (Pod.ExecResult execResult = pod.execInPod("rabbitmqadmin", "list", "operator_policies")) {
                 assertThat(execResult.consumeStandardOutAsString(StandardCharsets.UTF_8))
-                    .contains("operator policy 1");
+                        .contains("operator policy 1");
             }
 
 
-            try(Pod.ExecResult execResult = pod.execInPod("rabbitmq-plugins", "is_enabled", "rabbitmq_shovel", "--quiet")) {
+            try (Pod.ExecResult execResult = pod.execInPod("rabbitmq-plugins", "is_enabled", "rabbitmq_shovel", "--quiet")) {
                 assertThat(execResult.consumeStandardOutAsString(StandardCharsets.UTF_8))
-                    .contains("rabbitmq_shovel is enabled");
+                        .contains("rabbitmq_shovel is enabled");
             }
 
 
-            try(Pod.ExecResult execResult = pod.execInPod("rabbitmq-plugins", "is_enabled", "rabbitmq_random_exchange", "--quiet")) {
+            try (Pod.ExecResult execResult = pod.execInPod("rabbitmq-plugins", "is_enabled", "rabbitmq_random_exchange", "--quiet")) {
                 assertThat(execResult.consumeStandardOutAsString(StandardCharsets.UTF_8))
-                    .contains("rabbitmq_random_exchange is enabled");
+                        .contains("rabbitmq_random_exchange is enabled");
             }
         }
     }
@@ -179,20 +179,6 @@ class RabbitMQPodTest {
             assertThat(logs).doesNotContain(" (not found)");
         }
     }
-
-
-    @Test
-    public void shouldMountConfigurationFileErlang() throws URISyntaxException {
-        try (RabbitMQPod pod = new RabbitMQPod()) {
-
-            pod.withRabbitMQConfigErlang(new File(RabbitMQPodTest.class.getResource("/rabbitmq-custom.config").toURI()).toPath());
-            pod.create();
-
-            String logs = pod.getLogs(JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER);
-            assertThat(logs).contains("debug"); // config file changes log level to `debug`
-        }
-    }
-
 
     @Test
     public void shouldMountConfigurationFileSysctl() throws URISyntaxException {

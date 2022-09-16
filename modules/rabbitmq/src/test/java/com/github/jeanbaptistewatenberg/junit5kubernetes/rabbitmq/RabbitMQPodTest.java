@@ -185,12 +185,11 @@ class RabbitMQPodTest {
     public void shouldMountConfigurationFileErlang() throws URISyntaxException {
         try (RabbitMQPod pod = new RabbitMQPod()) {
 
-            pod.withRabbitMQConfigErlang(new File(RabbitMQPodTest.class.getResource("/rabbitmq-custom.conf").toURI()).toPath());
+            pod.withRabbitMQConfigErlang(new File(RabbitMQPodTest.class.getResource("/rabbitmq-custom.config").toURI()).toPath());
             pod.create();
 
             String logs = pod.getLogs(JUNIT_5_KUBERNETES_RABBIT_MQ_CONTAINER);
-            assertThat(logs).contains("config file(s) : /etc/rabbitmq/rabbitmq-custom.conf");
-            assertThat(logs).doesNotContain(" (not found)");
+            assertThat(logs).contains("debug"); // config file changes log level to `debug`
         }
     }
 

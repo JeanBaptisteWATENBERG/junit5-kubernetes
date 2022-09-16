@@ -326,6 +326,15 @@ public class RabbitMQPod extends Pod {
         return this;
     }
 
+    public RabbitMQPod withEnv(String key, String value) {
+        V1Container rabbitMQContainer = this.podToCreate.getSpec().getContainers().get(0);
+        rabbitMQContainer.addEnvItem(new V1EnvVar()
+            .name(key)
+            .value(value)
+        );
+        return this;
+    }
+
     public enum SslVerification {
         VERIFY_NONE("verify_none"), VERIFY_PEER("verify_peer");
 
